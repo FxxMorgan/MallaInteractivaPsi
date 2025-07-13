@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Malla Curricular - Psicología</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .bg-blur {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        
+        .subject-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateZ(0);
+        }
+        
+        .subject-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .subject-card.available {
+            cursor: pointer;
+        }
+        
+        .subject-card.blocked {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .subject-card.completed {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        
+        .prerequisite-line {
+            position: absolute;
+            background: #e5e7eb;
+            z-index: 1;
+        }
+        
+        .semester-column {
+            min-height: auto;
+        }
+        
+        @media (min-width: 1024px) {
+            .semester-column {
+                min-height: 100vh;
+            }
+        }
+        
+        .floating-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+        
+        /* Reduce motion for users who prefer it */
+        @media (prefers-reduced-motion: reduce) {
+            .floating-background {
+                animation: none;
+                background: linear-gradient(-45deg, #23a6d5, #23d5ab);
+            }
+            
+            .progress-bar {
+                animation: none;
+                background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            }
+            
+            .particle {
+                display: none;
+            }
+        }
+        
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            .subject-card {
+                border: 2px solid #000;
+            }
+            
+            .subject-card.completed {
+                background: #000;
+                color: #fff;
+                border-color: #fff;
+            }
+            
+            .subject-card.blocked {
+                background: #ccc;
+                border-color: #666;
+            }
+        }
+        
+        /* Focus styles for better keyboard navigation */
+        .subject-card:focus {
+            outline: 3px solid #3b82f6;
+            outline-offset: 2px;
+        }
+        
+        button:focus {
+            outline: 3px solid #3b82f6;
+            outline-offset: 2px;
+        }
+        
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .stats-card {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);
+            background-size: 200% 200%;
+            animation: gradientShift 3s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .semester-header {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .floating-particles {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            top: 0;
+            left: 0;
+        }
+        
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-800 overflow-x-auto">
+    <!-- Animated Background -->
+    <div class="floating-background"></div>
+    <div class="floating-particles" id="particles"></div>
+    
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-blur stats-card shadow-lg" role="banner">
+        <div class="container mx-auto px-4 sm:px-6 py-4">
+            <div class="flex flex-col lg:flex-row justify-between items-center space-y-4 lg:space-y-0">
+                <div class="text-center lg:text-left">
+                    <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2">Malla Curricular - Psicología</h1>
+                    <p class="text-white/80 text-sm sm:text-base">Universidad • Carrera de Psicología</p>
+                </div>
+                
+                <!-- Stats Panel -->
+                <div class="grid grid-cols-2 lg:flex lg:flex-wrap gap-2 sm:gap-4 justify-center lg:justify-end w-full lg:w-auto">
+                    <div class="stats-card rounded-lg px-3 sm:px-4 py-2 text-center">
+                        <div class="text-lg sm:text-2xl font-bold text-white" id="totalCredits" aria-live="polite">0</div>
+                        <div class="text-xs sm:text-sm text-white/80">Créditos Completados</div>
+                    </div>
+                    <div class="stats-card rounded-lg px-3 sm:px-4 py-2 text-center">
+                        <div class="text-lg sm:text-2xl font-bold text-white" id="totalHours" aria-live="polite">0</div>
+                        <div class="text-xs sm:text-sm text-white/80">Horas Completadas</div>
+                    </div>
+                    <div class="stats-card rounded-lg px-3 sm:px-4 py-2 text-center">
+                        <div class="text-lg sm:text-2xl font-bold text-white">300</div>
+                        <div class="text-xs sm:text-sm text-white/80">Total Créditos</div>
+                    </div>
+                    <div class="stats-card rounded-lg px-3 sm:px-4 py-2 text-center">
+                        <div class="text-lg sm:text-2xl font-bold text-white">4893</div>
+                        <div class="text-xs sm:text-sm text-white/80">Total Horas</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="mt-4">
+                <div class="bg-white/20 rounded-full h-3 overflow-hidden" role="progressbar" aria-label="Progreso de la carrera">
+                    <div class="progress-bar h-full rounded-full transition-all duration-500" style="width: 0%" id="progressBar"></div>
+                </div>
+                <p class="text-center text-white/80 mt-2 text-sm sm:text-base">Progreso de la carrera: <span id="progressText" aria-live="polite">0%</span></p>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main class="pt-52 sm:pt-48 pb-12 px-4" role="main">
+        <div class="container mx-auto max-w-7xl">
+            <!-- Controls -->
+            <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mb-8">
+                <button onclick="resetProgress()" 
+                        class="w-full sm:w-auto bg-red-500 hover:bg-red-600 focus:bg-red-600 text-white px-6 py-3 rounded-lg transition-all duration-300 transform hover:scale-105 focus:scale-105"
+                        aria-label="Reiniciar todo el progreso de la carrera">
+                    Reiniciar Progreso
+                </button>
+                <button onclick="showLegend()" 
+                        class="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 focus:bg-blue-600 text-white px-6 py-3 rounded-lg transition-all duration-300 transform hover:scale-105 focus:scale-105"
+                        aria-label="Mostrar leyenda con explicación de colores">
+                    Ver Leyenda
+                </button>
+                <button onclick="toggleHighContrast()" 
+                        class="w-full sm:w-auto bg-purple-500 hover:bg-purple-600 focus:bg-purple-600 text-white px-6 py-3 rounded-lg transition-all duration-300 transform hover:scale-105 focus:scale-105"
+                        aria-label="Activar o desactivar modo de alto contraste"
+                        id="contrastToggle">
+                    Alto Contraste
+                </button>
+            </div>
+            
+            <!-- Curriculum Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-6" id="curriculumGrid" role="grid" aria-label="Malla curricular de psicología">
+                <!-- Semesters will be generated by JavaScript -->
+            </div>
+        </div>
+    </main>
+    
+    <!-- Legend Modal -->
+    <div id="legendModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4" role="dialog" aria-labelledby="legendTitle" aria-modal="true">
+        <div class="bg-white rounded-lg p-6 sm:p-8 m-4 max-w-md w-full max-h-screen overflow-y-auto">
+            <h3 id="legendTitle" class="text-xl sm:text-2xl font-bold mb-4">Leyenda</h3>
+            <div class="space-y-3">
+                <div class="flex items-center">
+                    <div class="w-4 h-4 bg-white border-2 border-gray-300 rounded mr-3 flex-shrink-0" aria-hidden="true"></div>
+                    <span class="text-sm sm:text-base">Ramo disponible para cursar</span>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-4 h-4 bg-gray-400 opacity-50 rounded mr-3 flex-shrink-0" aria-hidden="true"></div>
+                    <span class="text-sm sm:text-base">Ramo bloqueado (faltan prerequisitos)</span>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-4 h-4 bg-green-500 rounded mr-3 flex-shrink-0" aria-hidden="true"></div>
+                    <span class="text-sm sm:text-base">Ramo completado</span>
+                </div>
+            </div>
+            <div class="mt-6 flex flex-col sm:flex-row gap-3">
+                <button onclick="hideLegend()" class="flex-1 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 focus:bg-blue-600 transition-colors">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Curriculum data structure
+        const curriculum = {
+            1: {
+                name: "Primer Semestre",
+                subjects: [
+                    { id: "fund_psic", name: "Fundamentos de la Psicología", credits: 8, hours: 108, prerequisites: [] },
+                    { id: "psic_des1", name: "Psicología del Desarrollo 1", credits: 6, hours: 72, prerequisites: [] },
+                    { id: "antro_soc", name: "Antropología Social", credits: 4, hours: 72, prerequisites: [] },
+                    { id: "taller_auto", name: "Taller de Autoconocimiento", credits: 3, hours: 54, prerequisites: [] },
+                    { id: "taller_aprend", name: "Taller de Competencias para el Aprendizaje", credits: 2, hours: 36, prerequisites: [] },
+                    { id: "taller_com", name: "Taller de Competencias Comunicativas", credits: 4, hours: 72, prerequisites: [] },
+                    { id: "taller_des1", name: "Taller de Desarrollo Personal 1", credits: 2, hours: 36, prerequisites: [] }
+                ]
+            },
+            2: {
+                name: "Segundo Semestre",
+                subjects: [
+                    { id: "psicobio", name: "Psicobiología", credits: 6, hours: 108, prerequisites: [] },
+                    { id: "psic_des2", name: "Psicología del Desarrollo 2", credits: 6, hours: 72, prerequisites: ["psic_des1"] },
+                    { id: "teorias_psico", name: "Teorías Psicoanalíticas", credits: 4, hours: 54, prerequisites: [] },
+                    { id: "taller_rel", name: "Taller de Relaciones Humanas", credits: 3, hours: 54, prerequisites: [] },
+                    { id: "teorias_cog", name: "Teorías Cognitivas", credits: 4, hours: 54, prerequisites: [] },
+                    { id: "pens_mat", name: "Pensamiento Matemático para las Ciencias Sociales", credits: 6, hours: 108, prerequisites: [] },
+                    { id: "taller_des2", name: "Taller de Desarrollo Personal 2", credits: 2, hours: 36, prerequisites: ["taller_des1"] }
+                ]
+            },
+            3: {
+                name: "Tercer Semestre",
+                subjects: [
+                    { id: "neuro1", name: "Procesos Neuropsicológicos 1", credits: 6, hours: 108, prerequisites: [] },
+                    { id: "psic_pers", name: "Psicología de la Personalidad", credits: 4, hours: 72, prerequisites: [] },
+                    { id: "epistem", name: "Epistemología de la Ciencia Psicológica", credits: 4, hours: 54, prerequisites: [] },
+                    { id: "teoria_sist", name: "Teoría Sistémica", credits: 4, hours: 54, prerequisites: [] },
+                    { id: "teorias_hum", name: "Teorías Humanistas", credits: 4, hours: 54, prerequisites: [] },
+                    { id: "ingles1", name: "Inglés Básico 1", credits: 4, hours: 72, prerequisites: [] },
+                    { id: "cultura_val", name: "Cultura y Valores", credits: 4, hours: 72, prerequisites: [] }
+                ]
+            },
+            4: {
+                name: "Cuarto Semestre",
+                subjects: [
+                    { id: "neuro2", name: "Procesos Neuropsicológicos 2", credits: 6, hours: 108, prerequisites: ["psicobio"] },
+                    { id: "psic_social", name: "Psicología Social", credits: 4, hours: 72, prerequisites: [] },
+                    { id: "inv_cual", name: "Investigación Cualitativa", credits: 6, hours: 108, prerequisites: [] },
+                    { id: "psicopat_ad", name: "Psicopatología del Adulto", credits: 4, hours: 72, prerequisites: [] },
+                    { id: "ingles2", name: "Inglés Básico 2", credits: 4, hours: 72, prerequisites: ["ingles1"] },
+                    { id: "pers_sent", name: "Persona y Sentido", credits: 4, hours: 72, prerequisites: [] },
+                    { id: "mecpsi1", name: "MECPSI Hito 1", credits: 2, hours: 6, prerequisites: [] }
+                ]
+            },
+            5: {
+                name: "Quinto Semestre",
+                subjects: [
+                    { id: "pol_soc", name: "Políticas Sociales", credits: 4, hours: 72, prerequisites: [] },
+                    { id: "psic_com", name: "Psicología Comunitaria", credits: 4, hours: 72, prerequisites: [] },
+                    { id: "inv_cuant", name: "Investigación Cuantitativa", credits: 6, hours: 72, prerequisites: [] },
+                    { id: "psic_org", name: "Psicología Organizacional y del Trabajo", credits: 6, hours: 108, prerequisites: [] },
+                    { id: "eval_cog", name: "Evaluación Psicológica Cognitiva", credits: 6, hours: 108, prerequisites: [] },
+                    { id: "psicopat_inf", name: "Psicopatología Infanto Juvenil", credits: 4, hours: 72, prerequisites: [] }
+                ]
+            },
+            6: {
+                name: "Sexto Semestre",
+                subjects: [
+                    { id: "psic_edu", name: "Psicología Educacional", credits: 6, hours: 108, prerequisites: [] },
+                    { id: "teo_com", name: "Teórica en Psicología Comunitaria", credits: 6, hours: 108, prerequisites: ["psic_com"] },
+                    { id: "estadist", name: "Estadísticas para la Psicología", credits: 6, hours: 108, prerequisites: [] },
+                    { id: "diag_org", name: "Diagnóstico en Psicología Organizacional", credits: 6, hours: 108, prerequisites: ["psic_org"] },
+                    { id: "eval_socio", name: "Evaluación Socioafectiva", credits: 6, hours: 108, prerequisites: ["psicopat_ad", "psicopat_inf"] }
+                ]
+            },
+            7: {
+                name: "Séptimo Semestre",
+                subjects: [
+                    { id: "diag_edu", name: "Diagnóstico en Psicología Educacional", credits: 6, hours: 108, prerequisites: ["psic_edu"] },
+                    { id: "psic_clin", name: "Psicología Clínica y Psicoterapia", credits: 4, hours: 72, prerequisites: [] },
+                    { id: "psicomet", name: "Psicometría", credits: 4, hours: 72, prerequisites: [] },
+                    { id: "diag_clin", name: "Diagnóstico en Psicología Clínica", credits: 6, hours: 108, prerequisites: ["eval_socio", "eval_cog", "psicopat_inf"] },
+                    { id: "taller_ident", name: "Taller de Identidad Profesional", credits: 4, hours: 54, prerequisites: [] },
+                    { id: "electivo1", name: "Electivo 1", credits: 4, hours: 72, prerequisites: [] },
+                    { id: "mecpsi2", name: "MECPSI Hito 2", credits: 2, hours: 6, prerequisites: [] }
+                ]
+            },
+            8: {
+                name: "Octavo Semestre",
+                subjects: [
+                    { id: "interv1", name: "Intervención Psicológica 1", credits: 10, hours: 252, prerequisites: ["diag_edu", "diag_org", "diag_clin"] },
+                    { id: "proy_inv", name: "Proyecto de Investigación en Psicología", credits: 12, hours: 36, prerequisites: ["estadist"] },
+                    { id: "etica", name: "Taller Ética Profesional en Psicología", credits: 4, hours: 72, prerequisites: [] },
+                    { id: "electivo2", name: "Electivo 2", credits: 4, hours: 72, prerequisites: [] }
+                ]
+            },
+            9: {
+                name: "Noveno Semestre",
+                subjects: [
+                    { id: "interv2", name: "Intervención Psicológica 2", credits: 10, hours: 252, prerequisites: ["interv1"] },
+                    { id: "sem_inv", name: "Seminario de Investigación en Psicología", credits: 15, hours: 36, prerequisites: ["proy_inv"] },
+                    { id: "taller_tit", name: "Taller de Titulación", credits: 2, hours: 54, prerequisites: ["taller_ident"] },
+                    { id: "electivo3", name: "Electivo 3", credits: 4, hours: 72, prerequisites: [] }
+                ]
+            },
+            10: {
+                name: "Décimo Semestre",
+                subjects: [
+                    { id: "practica", name: "Práctica Profesional", credits: 27, hours: 576, prerequisites: ["interv2"] },
+                    { id: "examen", name: "Examen de Título y Grado", credits: 2, hours: 3, prerequisites: ["sem_inv"] }
+                ]
+            }
+        };
+
+        let completedSubjects = new Set();
+        let animationInProgress = false;
+        let highContrastMode = false;
+
+        // Initialize the curriculum
+        document.addEventListener('DOMContentLoaded', function() {
+            renderCurriculum();
+            updateStats();
+            createParticles();
+            
+            // Load progress from localStorage
+            const saved = localStorage.getItem('psychologyProgress');
+            if (saved) {
+                completedSubjects = new Set(JSON.parse(saved));
+                updateCurriculumState();
+                updateStats();
+            }
+            
+            // Load contrast preference
+            const contrastSaved = localStorage.getItem('highContrastMode');
+            if (contrastSaved === 'true') {
+                toggleHighContrast();
+            }
+            
+            // Handle escape key for modals
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    hideLegend();
+                }
+            });
+        });
+
+        function handleKeyPress(event, subjectId) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggleSubject(subjectId);
+            }
+        }
+
+        function toggleHighContrast() {
+            highContrastMode = !highContrastMode;
+            document.body.classList.toggle('high-contrast', highContrastMode);
+            
+            const button = document.getElementById('contrastToggle');
+            button.textContent = highContrastMode ? 'Modo Normal' : 'Alto Contraste';
+            button.setAttribute('aria-pressed', highContrastMode);
+            
+            localStorage.setItem('highContrastMode', highContrastMode);
+            
+            // Add high contrast styles
+            if (highContrastMode) {
+                document.body.style.setProperty('--bg-color', '#000');
+                document.body.style.setProperty('--text-color', '#fff');
+            } else {
+                document.body.style.removeProperty('--bg-color');
+                document.body.style.removeProperty('--text-color');
+            }
+        }
+
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                const size = Math.random() * 4 + 2;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                
+                particlesContainer.appendChild(particle);
+                
+                // Animate particle
+                anime({
+                    targets: particle,
+                    translateY: [
+                        { value: -20, duration: 3000 },
+                        { value: 20, duration: 3000 }
+                    ],
+                    translateX: [
+                        { value: -10, duration: 2000 },
+                        { value: 10, duration: 2000 }
+                    ],
+                    opacity: [
+                        { value: 0.3, duration: 1500 },
+                        { value: 0.1, duration: 1500 }
+                    ],
+                    loop: true,
+                    direction: 'alternate',
+                    easing: 'easeInOutSine'
+                });
+            }
+        }
+
+        function renderCurriculum() {
+            const grid = document.getElementById('curriculumGrid');
+            grid.innerHTML = '';
+
+            Object.entries(curriculum).forEach(([semesterNum, semester]) => {
+                const semesterDiv = document.createElement('div');
+                semesterDiv.className = 'semester-column';
+                semesterDiv.setAttribute('role', 'gridcell');
+                semesterDiv.setAttribute('aria-label', `${semester.name}`);
+                
+                semesterDiv.innerHTML = `
+                    <div class="semester-header rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 text-center">
+                        <h3 class="text-lg sm:text-xl font-bold text-white mb-2">${semester.name}</h3>
+                        <div class="text-xs sm:text-sm text-white/80">
+                            <span id="semester-${semesterNum}-credits" aria-live="polite">0</span> / ${getTotalCreditsForSemester(semester)} créditos
+                        </div>
+                        <div class="text-xs sm:text-sm text-white/80">
+                            <span id="semester-${semesterNum}-hours" aria-live="polite">0</span> / ${getTotalHoursForSemester(semester)} horas
+                        </div>
+                    </div>
+                    <div class="space-y-3 sm:space-y-4" role="group" aria-label="Materias de ${semester.name}">
+                        ${semester.subjects.map(subject => createSubjectCard(subject)).join('')}
+                    </div>
+                `;
+                
+                grid.appendChild(semesterDiv);
+            });
+            
+            updateCurriculumState();
+        }
+
+        function createSubjectCard(subject) {
+            const isCompleted = completedSubjects.has(subject.id);
+            const isAvailable = isSubjectAvailable(subject);
+            const status = isCompleted ? 'completado' : (isAvailable ? 'disponible' : 'bloqueado');
+            
+            return `
+                <div class="subject-card bg-white rounded-lg p-3 sm:p-4 shadow-lg border-l-4 border-blue-500" 
+                     data-subject-id="${subject.id}"
+                     onclick="toggleSubject('${subject.id}')"
+                     onkeydown="handleKeyPress(event, '${subject.id}')"
+                     tabindex="0"
+                     role="button"
+                     aria-pressed="${isCompleted}"
+                     aria-label="${subject.name}, ${subject.credits} créditos, ${subject.hours} horas, estado: ${status}${subject.prerequisites.length > 0 ? ', prerequisitos: ' + subject.prerequisites.map(prereq => getSubjectNameById(prereq)).join(', ') : ''}">
+                    <h4 class="font-semibold text-gray-800 mb-2 text-sm sm:text-base leading-tight">${subject.name}</h4>
+                    <div class="text-xs sm:text-sm text-gray-600 space-y-1">
+                        <div class="flex justify-between">
+                            <span>Créditos:</span>
+                            <span class="font-medium">${subject.credits}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Horas:</span>
+                            <span class="font-medium">${subject.hours}</span>
+                        </div>
+                        ${subject.prerequisites.length > 0 ? `
+                            <div class="mt-2 p-2 bg-yellow-50 rounded text-xs">
+                                <strong>Prerequisitos:</strong><br>
+                                <span class="text-xs leading-relaxed">${subject.prerequisites.map(prereq => getSubjectNameById(prereq)).join(', ')}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function getSubjectNameById(id) {
+            for (const semester of Object.values(curriculum)) {
+                const subject = semester.subjects.find(s => s.id === id);
+                if (subject) return subject.name;
+            }
+            return id;
+        }
+
+        function getSubjectById(id) {
+            for (const semester of Object.values(curriculum)) {
+                const subject = semester.subjects.find(s => s.id === id);
+                if (subject) return subject;
+            }
+            return null;
+        }
+
+        function getTotalCreditsForSemester(semester) {
+            return semester.subjects.reduce((total, subject) => total + subject.credits, 0);
+        }
+
+        function getTotalHoursForSemester(semester) {
+            return semester.subjects.reduce((total, subject) => total + subject.hours, 0);
+        }
+
+        function isSubjectAvailable(subject) {
+            if (completedSubjects.has(subject.id)) return true;
+            
+            return subject.prerequisites.every(prereq => completedSubjects.has(prereq));
+        }
+
+        function updateCurriculumState() {
+            Object.entries(curriculum).forEach(([semesterNum, semester]) => {
+                let semesterCredits = 0;
+                let semesterHours = 0;
+                
+                semester.subjects.forEach(subject => {
+                    const card = document.querySelector(`[data-subject-id="${subject.id}"]`);
+                    if (!card) return;
+                    
+                    card.classList.remove('available', 'blocked', 'completed');
+                    
+                    const isCompleted = completedSubjects.has(subject.id);
+                    const isAvailable = isSubjectAvailable(subject);
+                    
+                    if (isCompleted) {
+                        card.classList.add('completed');
+                        card.setAttribute('aria-pressed', 'true');
+                        semesterCredits += subject.credits;
+                        semesterHours += subject.hours;
+                    } else if (isAvailable) {
+                        card.classList.add('available');
+                        card.setAttribute('aria-pressed', 'false');
+                        card.removeAttribute('aria-disabled');
+                    } else {
+                        card.classList.add('blocked');
+                        card.setAttribute('aria-pressed', 'false');
+                        card.setAttribute('aria-disabled', 'true');
+                    }
+                    
+                    // Update aria-label with current status
+                    const status = isCompleted ? 'completado' : (isAvailable ? 'disponible' : 'bloqueado');
+                    const prerequisites = subject.prerequisites.length > 0 ? 
+                        ', prerequisitos: ' + subject.prerequisites.map(prereq => getSubjectNameById(prereq)).join(', ') : '';
+                    
+                    card.setAttribute('aria-label', 
+                        `${subject.name}, ${subject.credits} créditos, ${subject.hours} horas, estado: ${status}${prerequisites}`);
+                });
+                
+                // Update semester stats
+                const creditsSpan = document.getElementById(`semester-${semesterNum}-credits`);
+                const hoursSpan = document.getElementById(`semester-${semesterNum}-hours`);
+                if (creditsSpan) creditsSpan.textContent = semesterCredits;
+                if (hoursSpan) hoursSpan.textContent = semesterHours;
+            });
+        }
+
+        function toggleSubject(subjectId) {
+            if (animationInProgress) return;
+            
+            const subject = getSubjectById(subjectId);
+            if (!subject) return;
+            
+            const card = document.querySelector(`[data-subject-id="${subjectId}"]`);
+            
+            if (completedSubjects.has(subjectId)) {
+                // Uncompletar materia
+                completedSubjects.delete(subjectId);
+                animateCardChange(card, false);
+            } else if (isSubjectAvailable(subject)) {
+                // Completar materia
+                completedSubjects.add(subjectId);
+                animateCardChange(card, true);
+            }
+            
+            // Save progress
+            localStorage.setItem('psychologyProgress', JSON.stringify([...completedSubjects]));
+            
+            setTimeout(() => {
+                updateCurriculumState();
+                updateStats();
+            }, 300);
+        }
+
+        function animateCardChange(card, completed) {
+            animationInProgress = true;
+            
+            anime({
+                targets: card,
+                scale: [1, 1.1, 1],
+                rotateY: completed ? [0, 180, 360] : [0, -180, -360],
+                duration: 600,
+                easing: 'easeInOutElastic(1, .8)',
+                complete: () => {
+                    animationInProgress = false;
+                }
+            });
+        }
+
+        function updateStats() {
+            let totalCredits = 0;
+            let totalHours = 0;
+            
+            completedSubjects.forEach(subjectId => {
+                const subject = getSubjectById(subjectId);
+                if (subject) {
+                    totalCredits += subject.credits;
+                    totalHours += subject.hours;
+                }
+            });
+            
+            // Animate stats update
+            anime({
+                targets: { credits: parseInt(document.getElementById('totalCredits').textContent) || 0 },
+                credits: totalCredits,
+                duration: 1000,
+                easing: 'easeOutQuart',
+                update: function(anim) {
+                    document.getElementById('totalCredits').textContent = Math.round(anim.animatables[0].target.credits);
+                }
+            });
+            
+            anime({
+                targets: { hours: parseInt(document.getElementById('totalHours').textContent) || 0 },
+                hours: totalHours,
+                duration: 1000,
+                easing: 'easeOutQuart',
+                update: function(anim) {
+                    document.getElementById('totalHours').textContent = Math.round(anim.animatables[0].target.hours);
+                }
+            });
+            
+            // Update progress bar
+            const progressPercentage = (totalCredits / 300) * 100;
+            document.getElementById('progressBar').style.width = progressPercentage + '%';
+            document.getElementById('progressText').textContent = Math.round(progressPercentage) + '%';
+        }
+
+        function resetProgress() {
+            if (confirm('¿Estás seguro de que quieres reiniciar todo el progreso?')) {
+                completedSubjects.clear();
+                localStorage.removeItem('psychologyProgress');
+                updateCurriculumState();
+                updateStats();
+                
+                // Animate reset
+                anime({
+                    targets: '.subject-card',
+                    scale: [1, 0.8, 1],
+                    duration: 400,
+                    delay: anime.stagger(50),
+                    easing: 'easeInOutQuad'
+                });
+            }
+        }
+
+        function showLegend() {
+            const modal = document.getElementById('legendModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            anime({
+                targets: modal.querySelector('div'),
+                scale: [0, 1],
+                opacity: [0, 1],
+                duration: 300,
+                easing: 'easeOutBack'
+            });
+        }
+
+        function hideLegend() {
+            const modal = document.getElementById('legendModal');
+            
+            anime({
+                targets: modal.querySelector('div'),
+                scale: [1, 0],
+                opacity: [1, 0],
+                duration: 200,
+                easing: 'easeInBack',
+                complete: () => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
+            });
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('legendModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideLegend();
+            }
+        });
+    </script>
+</body>
+</html>
